@@ -9,21 +9,24 @@ const playFull = document.getElementById('factorio');
 const loginForm = document.getElementById('factorio-login-form');
 const uname = loginForm.elements["username"];
 const pwd = loginForm.elements["password"];
+const token = loginForm.elements["token"];
 
 const creds = JSON.parse(localStorage.getItem('factorio-creds'));
 if (creds) {
     uname.value = creds.user;
     pwd.value = creds.pass;
+    token.value = creds.token;
 }
 
 // https://auth.factorio.com/api-login
-export async function login(user, pwd) {
+export async function login(user, pwd, token) {
     const response = await fetch(LOGIN, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
             username: user,
             password: pwd,
+            token: token,
             api_version: 4,
             require_game_ownership: true,
         }),
@@ -32,8 +35,9 @@ export async function login(user, pwd) {
     if (!response.ok || !json.token)
         throw new Error(json.message);
 
-    const playerData = await getPlayerData();
-    playerData["service-username"] = json.username;
+    let playerData = await getPlayerData();
+    playerData = playerData || {};
+    playerData["service-username"] = json.username || user;
     playerData["service-token"] = json.token;
 
     const putResponse = await SYNC.makeRequest(PLAYER_DATA_URL + ':/content', {
@@ -45,18 +49,6 @@ export async function login(user, pwd) {
     if (!putResponse.ok)
         throw new Error(`Failed to save player data: HTTP ${putResponse.status}: ${putResponse.statusText}`);
 
-    const credsResponse = await SYNC.makeRequest(LOCAL_DATA_URL + '/creds.json:/content', {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            user: user,
-            pass: pwd,
-        })
-    });
-
-    if (!credsResponse.ok)
-        throw new Error(`Failed to save credentials: HTTP ${credsResponse.status}: ${credsResponse.statusText}`);
-    
     localStorage.removeItem('factorio-creds');
 
     console.log('Factorio logged in');
@@ -71,28 +63,16 @@ async function getPlayerData() {
     return await response.json();
 }
 
-async function getCreds() {
-    const response = await SYNC.download(LOCAL_DATA_URL + '/creds.json');
-    if (response === null)
-        return null;
-    try {
-        return await response.json();
-    } catch (e) {
-        console.error('getCreds', e);
-        return null;
-    }
-}
-
 export async function loginRequired() {
     try {
-        var [player, creds] = await Promise.all([getPlayerData(), getCreds()]);
+        var player = await getPlayerData();
     } catch (e){
         console.error('loginRequired', e);
         return true;
     }
     const user = player["service-username"];
     const token = player["service-token"];
-    const required = !user || !token || !creds;
+    const required = !user || !token;
     if (!required)
         localStorage.removeItem('factorio-creds');
     return required;
@@ -114,15 +94,20 @@ if (creds)
 playFactorio.addEventListener('mouseenter', checkLogin);
 
 function credsEntered() {
-    return uname.validity.valid && pwd.validity.valid
+    if (!uname.validity.valid)
+        return false;
+    if (pwd.validity.valid)
+        return true;
+    return token.validity.valid && uname.value.indexOf('@') < 0;
 }
 
-for(const input of [uname, pwd]) {
+for(const input of [uname, pwd, token]) {
     input.addEventListener('input', () => {
         playFull.disabled = !credsEntered();
         localStorage.setItem('factorio-creds', JSON.stringify({
             user: uname.value,
             pass: pwd.value,
+            token: token.value,
         }));
     });
 }

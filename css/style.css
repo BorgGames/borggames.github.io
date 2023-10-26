@@ -62,6 +62,32 @@ a[href] {
     font-size: large;
 }
 
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltip-content {
+    visibility: hidden;
+    width: 38em;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+
+    position: absolute;
+    left: -20em;
+    bottom: 2em;
+    z-index: 1;
+}
+
+.tooltip:hover .tooltip-content,
+.tooltip:focus-within .tooltip-content{
+    visibility: visible;
+}
+
 body.video .no-video {
     display: none;
 }
@@ -195,7 +221,7 @@ body.video .no-video {
 }
 
 .login-label {
-    width: 6em;
+    width: 40em;
     display: inline-block;
 }
 

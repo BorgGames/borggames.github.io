@@ -57,15 +57,33 @@
                     <label for="uname" class="login-label"><b>Username</b></label>
                     <br/>
                     <input type="text" name="username" placeholder="Enter Username"
+                           title="To use token authentication, enter your username from the profile page"
                            id="uname" required autocomplete="username">
                     <br/>
-                    <label for="psw" class="login-label"><b>Password</b></label>
+                    <label for="psw" class="login-label" style="padding-top: 1em"><b>Password</b></label>
                     <br/>
                     <input type="password" name="password" placeholder="Enter Password"
                            id="psw" required autocomplete="current-password">
+                    <br/>
+                    <label for="factorio-token" class="login-label"><b>-or-
+                        <br/>Profile Token
+                        <span class="tooltip">
+                        (<a href="https://www.factorio.com/profile#factorio-token" target="_blank">click to get</a>)
+                            <span class="tooltip-content">
+                                This is what you'll need:
+                                <br/>
+                                <img src="/img/Factorio-ProfileToken.png" style="width: 35em;"/>
+                            </span>
+                            
+                        </span>
+                    </b></label>
+                    <br/>
+                    <input type="password" name="token" placeholder="Enter Token"
+                           title="To use token authentication, enter your username from the profile page into the username field"
+                           id="factorio-token" required autocomplete="current-password">
                 </p>
             </div>
-            <button class="action" type="button" id="factorio">Play Full Game</button>
+            <button class="action" type="button" id="factorio" style="margin-top: 1em">Play Full Game</button>
         </form>
         <p></p>
         <button class="action" type="button" id="factorio-demo" disabled>Run Demo</button>
@@ -91,9 +109,10 @@
                 <br/>
                 <br/>
                 <button id="onedriveLogin" class="action" type="button"
-                        title="Login with OneDrive to save game progress">Login</button>
+                        title="Login with OneDrive to save game progress"
+                >Login</button>
             </label>
-            
+
             <button id="cancelLogin" class="action" type="button">Cancel</button>
         </h2>
     </div>
@@ -136,7 +155,8 @@
         Home.launch({
             game: 'factorio',
             user: document.getElementById('uname').value,
-            pwd: document.getElementById('psw').value
+            pwd: document.getElementById('psw').value,
+            token: document.getElementById('factorio-token').value,
         });
     };
 

@@ -156,8 +156,8 @@ export class Home {
                         case 'status':
                             if (client.exitCode === Client.StopCodes.CONCURRENT_SESSION)
                                 break;
-                            status.innerText = event.msg;
-                            console.log(i, event.msg);
+                            status.innerText = event.msg.str;
+                            console.log(i, event.msg.str);
                             const resumeRequired = event.msg === 'video suspend';
                             resume.style.display = resumeRequired ? 'inline-block' : 'none';
                             if (resumeRequired)
@@ -235,6 +235,7 @@ export class Home {
     }
 
     static async launch(config) {
+        status.innerText = 'preparing to launch...';
         const timeout = util.timeout(1000 /*s*/ * 60 /*m*/ * 3);
 
         try {
@@ -257,7 +258,7 @@ export class Home {
             switch (config.game) {
                 case 'factorio':
                     if (config.user && await Factorio.loginRequired())
-                        await Factorio.login(config.user, config.pwd);
+                        await Factorio.login(config.user, config.pwd, config.token);
                     break;
                 case 'minecraft':
                     if (await Minecraft.loginRequired()) {
