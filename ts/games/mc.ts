@@ -54,7 +54,7 @@ export async function loginRequired() {
     }
 
     try {
-        const profile = await getProfile(creds.accessToken);
+        const profile = await getProfile(creds.session);
         console.log('MC profile', profile);
         return false;
     } catch (e) {
@@ -67,7 +67,7 @@ async function getProfile(accessToken: string) {
     const profileUrl = AUTH_ENDPOINT + 'check/' + encodeURIComponent(accessToken);
     const profile = await fetch(profileUrl, {method: 'POST'});
     if (profile.status === 401)
-        return new Error('Unauthorized');
+        throw new Error('Unauthorized');
     return await profile.json();
 }
 
