@@ -45,7 +45,7 @@ export async function completeLogin(code: string, signal: AbortSignal | undefine
 
 export async function loginRequired() {
     try {
-        var creds = await getCreds();
+        var creds = await getCredsInternal();
         if (creds === null)
             return true;
     } catch (e) {
@@ -71,7 +71,7 @@ async function getProfile(accessToken: string) {
     return await profile.json();
 }
 
-export async function getCreds() {
+async function getCredsInternal() {
     const response = await SYNC.download(CREDS_URL);
     if (response === null)
         return null;
@@ -82,4 +82,11 @@ export async function getCreds() {
         console.error('mc-creds', e);
         return null;
     }
+}
+
+export async function getCreds() {
+    const creds = await getCredsInternal();
+    // workaround for https://github.com/BorgGames/Drone/issues/36
+    creds.accessToken = creds.accessToken || creds.session;
+    return creds;
 }
