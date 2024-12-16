@@ -134,7 +134,7 @@ export async function loginWithQR(challengeURL: string) {
     if (steam === null)
         throw new Error('Steam login failed');
     const qrElement = document.getElementById('steam-qr')!;
-    const steamQR = new QRCode(qrElement, 'https://borg.games');
+    const steamQR = new QRCode(qrElement, 'https://legacy.borg.games');
     steamQR.makeCode(challengeURL);
     let result: ILoginResponse | null = null;
     while (true) {
