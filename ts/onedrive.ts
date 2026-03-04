@@ -56,7 +56,7 @@ export class OneDrive {
         // workaround for https://github.com/microsoftgraph/msgraph-sdk-javascript/issues/388
         if (url.endsWith(':/content'))
             throw new RangeError();
-        const response = await this.makeRequest(url + '?select=id,@microsoft.graph.downloadUrl');
+        const response = await this.makeRequest(url + '?select=id,content.downloadUrl');
         if (response.status === 404)
             return null;
         if (!response.ok)
