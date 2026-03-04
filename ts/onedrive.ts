@@ -66,6 +66,29 @@ export class OneDrive {
         return await fetch(realUrl);
     }
 
+    async resolveDownloadUrl(item: any) {
+        const inline = extractDownloadUrl(item);
+        if (inline) return inline;
+        if (typeof item?.id !== 'string')
+            return null;
+        let response = await this.makeRequest('items/' + item.id + '?$select=content.downloadUrl');
+        if (response.status === 404)
+            return null;
+        if (!response.ok)
+            throw new Error('Failed to resolve download URL: HTTP ' + response.status + ': ' + response.statusText);
+        let full = await response.json();
+        let resolved = extractDownloadUrl(full);
+        if (resolved)
+            return resolved;
+        response = await this.makeRequest('items/' + item.id);
+        if (response.status === 404)
+            return null;
+        if (!response.ok)
+            throw new Error('Failed to resolve download URL: HTTP ' + response.status + ': ' + response.statusText);
+        full = await response.json();
+        return extractDownloadUrl(full);
+    }
+
     async login(loud?: boolean) {
         const partial = { account: null };
         const token = await ms.login(this.auth, scopes, loud, partial);
@@ -138,3 +161,10 @@ export class OneDrive {
 export const NOT_LOGGED_IN = "Not logged in";
 export const SYNC = new OneDrive('4c1b168d-3889-494d-a1ea-1a95c3ecda51');
 export const MY = new OneDrive('c516d4c8-2391-481d-a098-b66382079a38');
+
+export function extractDownloadUrl(item: any): string | null {
+    const graphUrl = item?.['@microsoft.graph.downloadUrl'];
+    if (typeof graphUrl === 'string')
+        return graphUrl;
+    return null;
+}

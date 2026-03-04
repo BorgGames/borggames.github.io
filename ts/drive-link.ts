@@ -70,7 +70,7 @@ export class OneDriveSignal implements ISignal {
         await MY.deltaStream(this.sessionPath() + '/ice', async (candidate) => {
             if (!candidate.hasOwnProperty('file')) return;
             if (!candidate.name.endsWith('.ice')) return;
-            const downloadUrl = candidate['@microsoft.graph.downloadUrl'];
+            const downloadUrl = await MY.resolveDownloadUrl(candidate);
             if (!downloadUrl) return;
             const candidateResponse = await fetch(downloadUrl);
             if (!candidateResponse.ok)
@@ -102,7 +102,9 @@ export class OneDriveSignal implements ISignal {
             if (!candidate.hasOwnProperty('file')) return;
             if (!candidate.name.endsWith('.sdp')) return;
             if (candidate.parentReference.id !== info.id) return;
-            const sdpResponse = await fetch(candidate['@microsoft.graph.downloadUrl']);
+            const sdpUrl = await MY.resolveDownloadUrl(candidate);
+            if (!sdpUrl) return;
+            const sdpResponse = await fetch(sdpUrl);
             if (sdpResponse.ok) {
                 offer.sdp = JSON.parse(await sdpResponse.text());
                 offer.session = candidate.name.substring(0, candidate.name.length - '.sdp'.length);

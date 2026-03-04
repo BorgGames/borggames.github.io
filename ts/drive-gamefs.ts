@@ -32,7 +32,10 @@ export class OneDriveRunningGames {
         await MY.deltaStream(gamePath, async (candidate) => {
             if (!candidate.hasOwnProperty('file')) return;
             if (candidate.name !== sessionID + '.launch') return;
-            const launchResponse = await fetch(candidate['@microsoft.graph.downloadUrl']);
+            const launchUrl = await MY.resolveDownloadUrl(candidate);
+            if (!launchUrl)
+                throw new Error('Missing launch response download URL');
+            const launchResponse = await fetch(launchUrl);
             if (!launchResponse.ok)
                 throw new Error('Failed to fetch launch response');
 
