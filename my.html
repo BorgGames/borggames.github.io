@@ -312,6 +312,7 @@
         async function reloadGameList() {
             gameList.innerHTML = '';
             gameList.size = 0;
+            My.resetGames();
 
             const response = await OneDrive.makeRequest('special/approot:/PCs:/children');
             if (!response.ok) {
@@ -319,10 +320,11 @@
             }
             const json = await response.json();
             const items = json.value;
-            for (const item of items) {
-                if (!item.hasOwnProperty('folder')) continue;
-                await My.getGames(item.name, gameList);
-            }
+            const pcs = items
+                .filter((item) => item.hasOwnProperty('folder'))
+                .map((item) => item.name);
+
+            await Promise.all(pcs.map((pc) => My.getGames(pc, gameList)));
 
             const noPCs = document.getElementById('no-pcs');
             if (items.length === 0) {

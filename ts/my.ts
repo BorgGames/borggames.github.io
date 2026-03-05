@@ -9,6 +9,12 @@ interface IMyGame {
 export class Games {
     static games: Record<string, IMyGame> = {};
 }
+
+export function resetGames() {
+    for (const key of Object.keys(Games.games)) {
+        delete Games.games[key];
+    }
+}
 export async function getGames(pc: string, list: HTMLSelectElement) {
     let json = null;
     try {
