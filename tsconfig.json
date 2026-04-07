@@ -3,6 +3,7 @@
     "target": "ES2017",
     "module": "ES2022",
     "allowJs": true,
+    "rootDir": "ts",
     "outDir": "js",
     "sourceMap": true,
     "strict": true
