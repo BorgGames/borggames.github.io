@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="canonical" href="https://legacy.borg.games/access" />
+
+    <link rel="shortcut icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <title>Remote Play - Borg Games</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        a[href] { color: white; }
+        #launcher { text-align: initial; }
+        #game-list-section { margin: 16px 0; }
+        #game-list-section h2 { margin-bottom: 8px; }
+        .game-entry { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+        .game-entry button { font-size: 18px; }
+    </style>
+</head>
+
+<body style="text-align: center; background: #1e1e1e; color: #cedada;">
+    <noscript><h1>Cloud gaming requires JavaScript</h1></noscript>
+
+    <div class="video-container">
+        <video autoplay disablePictureInPicture></video>
+        <h1 id="game-status"></h1>
+        <div class="popup">
+            <input type="checkbox" id="popup" checked="checked" style="display: none">
+            <label for="popup" class="alert-message"></label>
+        </div>
+    </div>
+
+    <div id="launcher">
+        <div id="no-key" style="display: none;">
+            <h2>No access key provided.</h2>
+            <p>Open this link from the Borg app on your gaming PC.</p>
+        </div>
+        <div id="game-list-section" style="display: none;">
+            <h2>Select a game</h2>
+            <div id="game-list"></div>
+        </div>
+        <div id="connecting" style="display: none;">
+            <h2 id="connect-status">Connecting…</h2>
+        </div>
+    </div>
+
+    <h3 style="display: inline-block;"><a href="/about">© Borg Queen, LLC 2024</a></h3>
+
+    <script type="module">
+        import * as util from './js/streaming-client/built/util.js';
+        import { Ephemeral } from './js/ephemeral.js';
+        import { GameID } from './js/gid.js';
+        import { getIceServers, updateIceServers } from './js/ice.js';
+        import { ACCESS_KEY, GAME_URI, parseOffer, connect } from './js/access.js';
+
+        updateIceServers().catch(console.error);
+
+        const launcherUI = document.getElementById('launcher');
+        const noKeyEl = document.getElementById('no-key');
+        const gameListSection = document.getElementById('game-list-section');
+        const gameListEl = document.getElementById('game-list');
+        const connectingEl = document.getElementById('connecting');
+        const connectStatus = document.getElementById('connect-status');
+        const videoContainer = document.querySelector('.video-container');
+        const video = document.querySelector('video');
+        const statusEl = document.getElementById('game-status');
+
+        if (!ACCESS_KEY) {
+            noKeyEl.style.display = 'block';
+        } else {
+            main();
+        }
+
+        async function main() {
+            connectingEl.style.display = 'block';
+            connectStatus.innerText = 'Looking for PC…';
+
+            let nodes;
+            try {
+                nodes = await Ephemeral.getNodes(null, ACCESS_KEY);
+            } catch (e) {
+                connectStatus.innerText = 'Failed to connect: ' + e.message;
+                return;
+            }
+
+            if (nodes.length === 0) {
+                connectStatus.innerText = 'PC not found. Make sure the Borg app is running.';
+                return;
+            }
+
+            const node = nodes[0];
+            const { sdp, games } = parseOffer(node);
+
+            if (GAME_URI) {
+                // Direct launch: game specified in URL
+                const exe = GameID.tryGetExe(GAME_URI);
+                if (!exe) {
+                    connectStatus.innerText = 'Invalid game URI: ' + GAME_URI;
+                    return;
+                }
+                await launch(exe, node);
+            } else if (games.length > 0) {
+                // Show game list from offer metadata
+                connectingEl.style.display = 'none';
+                showGameList(games, node);
+            } else {
+                connectStatus.innerText = 'No game specified. Use a game-specific share link from the Borg app.';
+            }
+        }
+
+        function showGameList(games, node) {
+            gameListSection.style.display = 'block';
+            gameListEl.innerHTML = '';
+            for (const game of games) {
+                const exe = GameID.tryGetExe(game.uri);
+                if (!exe) continue;
+                const entry = document.createElement('div');
+                entry.className = 'game-entry';
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.innerText = game.title;
+                btn.addEventListener('click', () => {
+                    gameListSection.style.display = 'none';
+                    connectingEl.style.display = 'block';
+                    launch(exe, node);
+                });
+                entry.appendChild(btn);
+                gameListEl.appendChild(entry);
+            }
+        }
+
+        async function launch(exe, node) {
+            const sessionId = crypto.randomUUID();
+            connectStatus.innerText = 'Launching…';
+
+            launcherUI.style.display = 'none';
+            videoContainer.style.display = 'block';
+
+            const timeout = util.timeout(1000 * 60 * 5);
+            window.history.pushState('session', '', `#session=${sessionId}`);
+
+            try {
+                const code = await connect(video, statusEl, exe, sessionId, node, timeout);
+                if (code !== 0 && code !== 'cancelled')
+                    alert(code instanceof Error ? (code.message || String(code)) : `Exit code: ${code}`);
+            } catch (e) {
+                console.error(e);
+                alert(e);
+            } finally {
+                window.history.back();
+                launcherUI.style.display = '';
+                videoContainer.style.display = '';
+                video.src = '';
+                video.load();
+                connectingEl.style.display = 'none';
+                connectStatus.innerText = '';
+            }
+        }
+    </script>
+</body>
+
+</html>

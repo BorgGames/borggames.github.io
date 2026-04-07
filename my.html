@@ -96,6 +96,9 @@
         import { Session } from "./js/session.js";
 
         import * as My from "./js/my.js";
+        import { Ephemeral } from './js/ephemeral.js';
+
+        const ACCESS_KEY = new URLSearchParams(window.location.search).get('access');
 
         const clientApi = new ClientAPI();
         const launcherUI = document.getElementById('launcher');
@@ -107,7 +110,7 @@
         let newGame = false;
         let game = "";
 
-        function runClient(pc, signalFactory, element, sessionId, timeout) {
+        function runClient(pc, signalFactory, element, exe, sessionId, timeout) {
             return new Promise(async (resolve) => {
                 const iceServers = getIceServers();
                 let stall = 0;
@@ -182,7 +185,11 @@
                     switch (name) {
                     case 'control':
                         await Session.waitForCommandRequest(channel);
-                        channel.send(sessionId);
+                        if (ACCESS_KEY) {
+                            channel.send(JSON.stringify({uri: 'borg://exe/' + exe, sessionId}));
+                        } else {
+                            channel.send(exe + '\\' + sessionId);
+                        }
                         await Session.waitForCommandRequest(channel);
                         break;
                     case 'persistence':
@@ -218,7 +225,19 @@
                 }
 
                 try {
-                    const offer = await OneDriveSignal.getServerOffer(pc, timeout);
+                    let offerSession, offerSdp;
+                    if (ACCESS_KEY) {
+                        const nodes = await Ephemeral.getNodes(null, ACCESS_KEY);
+                        if (nodes.length === 0) throw new Error('No nodes available');
+                        offerSession = nodes[0].session_id;
+                        const info = JSON.parse(nodes[0].peer_connection_offer);
+                        const raw = JSON.parse(info.Offer);
+                        offerSdp = raw.offer ?? raw;
+                    } else {
+                        const offer = await OneDriveSignal.getServerOffer(pc, timeout);
+                        offerSession = offer.session;
+                        offerSdp = offer.sdp;
+                    }
 
                     const cfg = {
                         encoder_bitrate: parseInt(localStorage.getItem('encoder_bitrate')) || 1,
@@ -235,7 +254,7 @@
 
                     await Promise.race([
                         timeout,
-                        client.connect(offer.session, offer.sdp, cfg)]);
+                        client.connect(offerSession, offerSdp, cfg)]);
 
                     onResize();
                 } catch (e) {
@@ -248,7 +267,7 @@
 
         async function launch(pc, exe, sessionId) {
             const signalFactory = (onFatal) => {
-                return new OneDriveSignal(pc, onFatal);
+                return ACCESS_KEY ? new Ephemeral(null, ACCESS_KEY) : new OneDriveSignal(pc, onFatal);
             };
 
             const container = document.querySelector('.video-container');
@@ -278,10 +297,11 @@
 
                 try {
                     const run = await Promise.all([
-                        runClient(pc, signalFactory, element, exe + '\\' + sessionId, timeout),
-                        launch
-                            ? OneDriveRunningGames.launch(pc, exe, sessionId, timeout)
-                            : OneDriveRunningGames.assertRunning(pc, exe, sessionId, timeout)
+                        runClient(pc, signalFactory, element, exe, sessionId, timeout),
+                        ACCESS_KEY ? Promise.resolve() :
+                            launch
+                                ? OneDriveRunningGames.launch(pc, exe, sessionId, timeout)
+                                : OneDriveRunningGames.assertRunning(pc, exe, sessionId, timeout)
                     ]);
                     const code = run[0];
 
