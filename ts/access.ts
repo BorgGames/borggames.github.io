@@ -10,6 +10,7 @@ import { Session } from './session.js';
 const params = new URLSearchParams(window.location.search);
 export const ACCESS_KEY = params.get('key');
 export const GAME_URI = params.get('game');
+export const MBPS = params.get('mbps');
 
 interface IGameEntry {
     uri: string;
@@ -91,7 +92,7 @@ export async function connect(
         document.addEventListener('keydown', hotkeys, true);
 
         Promise.race([timeout, client.connect(node.session_id, sdp, {
-            encoder_bitrate: parseInt(localStorage.getItem('encoder_bitrate') ?? '2') || 2,
+            encoder_bitrate: parseInt(MBPS ?? '') || parseInt(localStorage.getItem('encoder_bitrate') ?? '') || 6,
         })]).catch((e: any) => {
             if (e?.message === 'cancelled') client.destroy(0);
             resolve(e);

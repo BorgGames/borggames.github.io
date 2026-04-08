@@ -98,7 +98,9 @@
         import * as My from "./js/my.js";
         import { Ephemeral } from './js/ephemeral.js';
 
-        const ACCESS_KEY = new URLSearchParams(window.location.search).get('access');
+        const params = new URLSearchParams(window.location.search);
+        const ACCESS_KEY = params.get('access');
+        const MBPS = params.get('mbps');
 
         const clientApi = new ClientAPI();
         const launcherUI = document.getElementById('launcher');
@@ -240,7 +242,7 @@
                     }
 
                     const cfg = {
-                        encoder_bitrate: parseInt(localStorage.getItem('encoder_bitrate')) || 1,
+                        encoder_bitrate: parseInt(MBPS ?? '') || parseInt(localStorage.getItem('encoder_bitrate') ?? '') || 6,
                     };
 
                     const w = Math.trunc(window.devicePixelRatio * element.clientWidth);
