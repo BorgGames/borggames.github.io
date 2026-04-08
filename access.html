@@ -104,7 +104,8 @@
                     connectStatus.innerText = 'Invalid game URI: ' + GAME_URI;
                     return;
                 }
-                await launch(exe, node);
+                const gameTitle = games.find(g => g.uri === GAME_URI)?.title ?? exe;
+                await launch(gameTitle, exe, node);
             } else if (games.length > 0) {
                 // Show game list from offer metadata
                 connectingEl.style.display = 'none';
@@ -128,14 +129,14 @@
                 btn.addEventListener('click', () => {
                     gameListSection.style.display = 'none';
                     connectingEl.style.display = 'block';
-                    launch(exe, node);
+                    launch(game.title, exe, node);
                 });
                 entry.appendChild(btn);
                 gameListEl.appendChild(entry);
             }
         }
 
-        async function launch(exe, node) {
+        async function launch(gameTitle, exe, node) {
             const sessionId = crypto.randomUUID();
             connectStatus.innerText = 'Launching…';
 
@@ -146,7 +147,7 @@
             window.history.pushState('session', '', `#session=${sessionId}`);
 
             try {
-                const code = await connect(video, statusEl, exe, sessionId, node, timeout);
+                const code = await connect(video, statusEl, exe, sessionId, node, timeout, gameTitle);
                 if (code !== 0 && code !== 'cancelled')
                     alert(code instanceof Error ? (code.message || String(code)) : `Exit code: ${code}`);
             } catch (e) {
@@ -160,6 +161,7 @@
                 video.load();
                 connectingEl.style.display = 'none';
                 connectStatus.innerText = '';
+                document.title = 'Remote Play - Borg Games';
             }
         }
     </script>

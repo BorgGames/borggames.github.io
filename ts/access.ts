@@ -43,6 +43,7 @@ export async function connect(
     sessionId: string,
     node: IBorgNode,
     timeout: Promise<never>,
+    gameTitle?: string,
 ) {
     const { sdp } = parseOffer(node);
     const signalFactory = () => new Ephemeral(null, ACCESS_KEY);
@@ -68,9 +69,13 @@ export async function connect(
             case 'frame':
                 if (stall !== 0) { clearTimeout(stall); stall = 0; }
                 break;
-            case 'status':
-                statusEl.innerText = event.msg?.str ?? '';
+            case 'status': {
+                const s = event.msg?.str ?? '';
+                statusEl.innerText = s;
+                if (gameTitle)
+                    document.title = s ? `${gameTitle} - ${s} - Borg Games` : `${gameTitle} - Borg Games`;
                 break;
+            }
             }
         }, async (name: string, channel: RTCDataChannel) => {
             if (name !== 'control') return;

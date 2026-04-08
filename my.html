@@ -155,8 +155,12 @@
                     case 'frame':
                         stopStall();
                         break;
-                    case 'status':
+                    case 'status': {
                         status.innerText = event.msg.str;
+                        const gt = document.getElementById('game-title').innerText;
+                        document.title = event.msg.str
+                            ? `${gt} - ${event.msg.str} on ${pc} - Borg Games`
+                            : `${gt} on ${pc} - Borg Games`;
                         if (!event.msg.str) {
                             const connectionType = getConnectionType(client.rtc.rtc);
                             if (connectionType === 'relay') {
@@ -328,6 +332,7 @@
                 element.load();
 
                 Launcher.selectGame(Launcher.selectedGame.offers[0].Uri);
+                document.title = 'Games on my PCs - Borg Games';
             }
         }
 
