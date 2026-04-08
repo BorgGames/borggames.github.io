@@ -98,14 +98,15 @@
             const { sdp, games } = parseOffer(node);
 
             if (GAME_URI) {
-                // Direct launch: game specified in URL
+                // Direct launch: game specified in URL — show button for user gesture
                 const exe = GameID.tryGetExe(GAME_URI);
                 if (!exe) {
                     connectStatus.innerText = 'Invalid game URI: ' + GAME_URI;
                     return;
                 }
                 const gameTitle = games.find(g => g.uri === GAME_URI)?.title ?? exe;
-                await launch(gameTitle, exe, node);
+                connectingEl.style.display = 'none';
+                showGameList([{ uri: GAME_URI, title: gameTitle }], node);
             } else if (games.length > 0) {
                 // Show game list from offer metadata
                 connectingEl.style.display = 'none';
